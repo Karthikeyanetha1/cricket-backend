@@ -7,31 +7,7 @@ const path = require("path");
 dotenv.config();
 
 const app = express();
-
-// ✅ Proper CORS setup (important for Render frontend)
-const allowedOrigins = [
-  "https://cricket-frontend-z1x2.onrender.com", // your deployed frontend
-  "http://localhost:3000" // for local testing
-];
-
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("CORS not allowed for this origin"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  })
-);
-
-// ✅ Handle preflight requests
-app.options("*", cors());
-
+app.use(cors());
 app.use(express.json());
 
 // Use MONGO_URI from env (Render) or a local fallback
@@ -86,12 +62,40 @@ app.get("/bookings", async (req, res) => {
 });
 
 /*
-  Static frontend serving (optional if backend serves React build)
+  Static frontend serving:
+  - serve the built frontend (if present).
+  - fallback middleware below serves index.html only for browser HTML GET requests
+    that are not API/static requests. This avoids path-to-regexp wildcard issues.
 */
 const frontendBuildPath = path.resolve(__dirname, "..", "cricket-frontend", "build");
 app.use(express.static(frontendBuildPath));
-app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(frontendBuildPath, "index.html"));
+
+// Fallback: for GET requests that accept HTML and are NOT API/static requests,
+// send index.html. This avoids registering a wildcard route that path-to-regexp may parse.
+app.use((req, res, next) => {
+  // only handle simple browser GET requests
+  if (req.method !== "GET") return next();
+
+  // if request expects HTML (browser navigation)
+  if (!req.accepts || !req.accepts("html")) return next();
+
+  const urlPath = (req.path || "").toLowerCase();
+
+  // don't rewrite API routes or static assets
+  if (
+    urlPath.startsWith("/book") ||
+    urlPath.startsWith("/bookings") ||
+    urlPath.startsWith("/static") ||
+    urlPath.startsWith("/api") // in case you add /api later
+  ) {
+    return next();
+  }
+
+  // send index.html if it exists in build
+  const indexFile = path.join(frontendBuildPath, "index.html");
+  return res.sendFile(indexFile, (err) => {
+    if (err) next(err);
+  });
 });
 
 // Listen on Render-assigned port (or local fallback)
