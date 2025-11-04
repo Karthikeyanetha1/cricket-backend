@@ -1,8 +1,8 @@
-// server.js
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const path = require("path");
 
 dotenv.config();
 
@@ -13,10 +13,7 @@ app.use(express.json());
 // Use MONGO_URI from env (Render) or a local fallback
 const mongoURI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/boxcricket";
 
-mongoose.connect(mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+mongoose.connect(mongoURI)
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.error("❌ MongoDB Connection Failed:", err));
 
@@ -30,25 +27,21 @@ const bookingSchema = new mongoose.Schema({
 
 const Booking = mongoose.model("Booking", bookingSchema);
 
-// Health route
+// API routes
 app.get("/", (req, res) => {
   res.send("Box Cricket Backend is Running...");
 });
 
-// Create booking
 app.post("/book", async (req, res) => {
   try {
     const { name, mobile, date, time } = req.body;
     if (!name || !mobile || !date || !time) {
       return res.status(400).json({ error: "Missing required fields" });
     }
-
-    // prevent double-booking
     const existing = await Booking.findOne({ date, time });
     if (existing) {
       return res.status(400).json({ error: "Time slot already booked" });
     }
-
     const booking = new Booking({ name, mobile, date, time });
     await booking.save();
     return res.json({ message: "Booking successful", booking });
@@ -58,7 +51,6 @@ app.post("/book", async (req, res) => {
   }
 });
 
-// List bookings
 app.get("/bookings", async (req, res) => {
   try {
     const bookings = await Booking.find().sort({ date: 1, time: 1 });
@@ -67,6 +59,17 @@ app.get("/bookings", async (req, res) => {
     console.error("❌ Error fetching bookings:", err);
     return res.status(500).json({ error: "Failed to fetch bookings" });
   }
+});
+
+/*
+  Static frontend serving:
+  - If you build the frontend into ~/cricket-frontend/build,
+    this will serve it from the backend's root path.
+*/
+const frontendBuildPath = path.resolve(__dirname, "..", "cricket-frontend", "build");
+app.use(express.static(frontendBuildPath));
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(frontendBuildPath, "index.html"));
 });
 
 // Listen on Render-assigned port (or local fallback)
