@@ -7,7 +7,31 @@ const path = require("path");
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// ✅ Proper CORS setup (important for Render frontend)
+const allowedOrigins = [
+  "https://cricket-frontend-z1x2.onrender.com", // your deployed frontend
+  "http://localhost:3000" // for local testing
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed for this origin"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+
+// ✅ Handle preflight requests
+app.options("*", cors());
+
 app.use(express.json());
 
 // Use MONGO_URI from env (Render) or a local fallback
@@ -62,9 +86,7 @@ app.get("/bookings", async (req, res) => {
 });
 
 /*
-  Static frontend serving:
-  - If you build the frontend into ~/cricket-frontend/build,
-    this will serve it from the backend's root path.
+  Static frontend serving (optional if backend serves React build)
 */
 const frontendBuildPath = path.resolve(__dirname, "..", "cricket-frontend", "build");
 app.use(express.static(frontendBuildPath));
