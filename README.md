@@ -26,7 +26,7 @@ currently_learning:
   - Cloud Deployment (AWS / Vercel)
 highlight_project: Box Cricket Booking System (MERN Stack)
 portfolio: https://karthikeyanetha1.github.io/karthikeya-portfolio
-contact: karthikyanethar7@gmail.com
+contact: karthikeyanetha7@gmail.com
 ```
 
 ---
@@ -71,7 +71,7 @@ contact: karthikyanethar7@gmail.com
 <tr>
 <td width="55%">
 
-### ⚡ Box Cricket Booking System
+### ⚡ VSR Box Cricket Booking System
 
 A full-stack MERN application for real-time cricket ground slot bookings. Features secure admin dashboard, booking analytics, email/SMS integration, and cloud deployment on Render.
 
@@ -131,7 +131,7 @@ A full-stack MERN application for real-time cricket ground slot bookings. Featur
 
 <div align="center">
 
-[![Email](https://img.shields.io/badge/Gmail-karthikyanethar7%40gmail.com-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:karthikyanethar7@gmail.com)
+[![Email](https://img.shields.io/badge/Gmail-karthikeyanetha7%40gmail.com-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:karthikyanethar7@gmail.com)
 [![Portfolio](https://img.shields.io/badge/Portfolio-Visit%20Now-00d4ff?style=for-the-badge&logo=githubpages&logoColor=white)](https://karthikeyanetha1.github.io/karthikeya-portfolio)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Karthikeya%20Gurram-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/karthikeya-gurram-59209726a)
 [![GitHub](https://img.shields.io/badge/GitHub-karthikeyanetha1-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/karthikeyanetha1)
