@@ -5,34 +5,30 @@ require("dotenv").config();
 
 const app = express();
 
-// ===== PORT FIX (IMPORTANT FOR RENDER) =====
-const PORT = process.env.PORT || 5000;
+// ✅ IMPORTANT: Render uses this PORT
+const PORT = process.env.PORT || 10000;
 
-// ===== MIDDLEWARE =====
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
+// ✅ ROOT ROUTE (Render health fix)
 app.get("/", (req, res) => {
-  res.send("Backend is live 🚀");
+  res.status(200).send("Backend is live 🚀");
 });
 
-// ===== ROOT ROUTE (FIX TIMEOUT ISSUE) =====
-app.get("/", (req, res) => {
-  res.send("Backend is live 🚀");
-});
-
-// ===== HEALTH CHECK =====
+// ✅ HEALTH ROUTE (Backup health check)
 app.get("/health", (req, res) => {
-  res.status(200).send("OK");
+  res.status(200).json({ ok: true });
 });
 
-// ===== MONGODB CONNECTION =====
+// MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/boxcricket")
   .then(() => console.log("🟢 MongoDB Connected"))
-  .catch((err) => console.log("🔴 MongoDB Error:", err));
+  .catch((err) => console.error("🔴 MongoDB Error:", err));
 
-// ===== SCHEMA =====
+// Schema
 const bookingSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
@@ -46,20 +42,21 @@ const bookingSchema = new mongoose.Schema(
 
 const Booking = mongoose.model("Booking", bookingSchema);
 
-// ===== GET BOOKINGS =====
+// ==============================
+// PUBLIC ROUTES
+// ==============================
+
+// Get all bookings
 app.get("/bookings", async (req, res) => {
   try {
-    const bookings = await Booking.find().sort({
-      date: 1,
-      startTime: 1,
-    });
+    const bookings = await Booking.find().sort({ date: 1, startTime: 1 });
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch bookings" });
   }
 });
 
-// ===== CREATE BOOKING =====
+// Create booking
 app.post("/bookings", async (req, res) => {
   try {
     const { name, mobile, date, startTime, endTime } = req.body;
@@ -72,37 +69,31 @@ app.post("/bookings", async (req, res) => {
     const existing = await Booking.findOne({
       date,
       $or: [
-        { startTime: { $lt: endTime }, endTime: { $gt: startTime } },
-      ],
+        { startTime: { $lt: endTime }, endTime: { $gt: startTime } }
+      ]
     });
 
     if (existing) {
       return res.status(400).json({
-        error: `Slot conflicts with existing booking (${existing.startTime}-${existing.endTime})`,
+        error: `Slot conflicts with existing booking (${existing.startTime}-${existing.endTime})`
       });
     }
 
-    const booking = new Booking({
-      name,
-      mobile,
-      date,
-      startTime,
-      endTime,
-    });
-
+    const booking = new Booking({ name, mobile, date, startTime, endTime });
     await booking.save();
 
-    res.status(201).json({
-      message: "Booking successful",
-      booking,
-    });
+    res.status(201).json({ message: "Booking successful", booking });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 });
 
-// ===== ADMIN AUTH =====
+// ==============================
+// ADMIN AUTH
+// ==============================
+
 function adminAuth(req, res, next) {
   const key = req.headers["x-admin-key"] || req.query.admin_key;
   const ADMIN_KEY = process.env.ADMIN_KEY;
@@ -118,19 +109,21 @@ function adminAuth(req, res, next) {
   next();
 }
 
-// ===== ADMIN ROUTES =====
+// ==============================
+// ADMIN ROUTES
+// ==============================
+
+// Get all bookings
 app.get("/admin/bookings", adminAuth, async (req, res) => {
   try {
-    const bookings = await Booking.find().sort({
-      date: 1,
-      startTime: 1,
-    });
+    const bookings = await Booking.find().sort({ date: 1, startTime: 1 });
     res.json(bookings);
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch" });
   }
 });
 
+// Update booking
 app.put("/admin/bookings/:id", adminAuth, async (req, res) => {
   try {
     const updated = await Booking.findByIdAndUpdate(
@@ -139,31 +132,31 @@ app.put("/admin/bookings/:id", adminAuth, async (req, res) => {
       { new: true }
     );
 
-    if (!updated) {
-      return res.status(404).json({ error: "Not found" });
-    }
+    if (!updated) return res.status(404).json({ error: "Not found" });
 
     res.json({ message: "Updated", booking: updated });
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Failed to update" });
   }
 });
 
+// Delete booking
 app.delete("/admin/bookings/:id", adminAuth, async (req, res) => {
   try {
     const removed = await Booking.findByIdAndDelete(req.params.id);
 
-    if (!removed) {
-      return res.status(404).json({ error: "Not found" });
-    }
+    if (!removed) return res.status(404).json({ error: "Not found" });
 
     res.json({ message: "Deleted" });
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: "Failed to delete" });
   }
 });
 
-// ===== START SERVER =====
-app.listen(PORT, "0.0.0.0", () => {
+// ==============================
+// START SERVER
+// ==============================
+
+app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
